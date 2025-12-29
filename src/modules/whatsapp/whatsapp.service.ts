@@ -77,17 +77,21 @@ export class WhatsappService {
     return this.waRepo.remove(wa);
   }
 
-  async markConnected(id: string, session: any) {
+  async updateSession(id: string, session: any) {
+    const wa = await this.findOne(id);
+    wa.baileysSession = session;
+    return this.waRepo.save(wa);
+  }
+
+  async markConnected(id: string) {
     const wa = await this.findOne(id);
     wa.isConnected = true;
-    wa.baileysSession = session;
     return this.waRepo.save(wa);
   }
 
   async markDisconnected(id: string) {
     const wa = await this.findOne(id);
     wa.isConnected = false;
-    wa.baileysSession = null;
     return this.waRepo.save(wa);
   }
 }
