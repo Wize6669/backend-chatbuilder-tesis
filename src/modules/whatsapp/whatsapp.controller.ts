@@ -22,8 +22,10 @@ export class WhatsappController {
   ) {}
 
   @Post()
-  create(@Body() dto: CreateWhatsappAccountDto) {
-    return this.waService.create(dto);
+  async create(@Body() dto: CreateWhatsappAccountDto) {
+    const account = await this.waService.create(dto);
+    await this.baileysService.connectWhatsApp(account.id);
+    return account;
   }
 
   @Get()
@@ -31,17 +33,28 @@ export class WhatsappController {
     return this.waService.findAll();
   }
 
-  @Get('qr')
-  getQr(@Res() res: Response) {
-    const qr = this.baileysService.getQr();
-    console.log('QR CODE SOLICITADO', qr);
+  @Get(':id/qr')
+  getQr(@Param('id') id: string, @Res() res: Response) {
+    const qr = this.baileysService.getQr(id);
 
     if (!qr) {
-      return res.status(404).send('QR no disponible');
+      return res.status(404).send('QR no disponible o cuenta ya conectada');
     }
 
     res.setHeader('Content-Type', 'image/png');
     res.send(qr);
+  }
+
+  @Post(':id/connect')
+  async connect(@Param('id') id: string) {
+    await this.baileysService.connectWhatsApp(id);
+    return { message: 'Conexión iniciada', accountId: id };
+  }
+
+  @Post(':id/disconnect')
+  async disconnect(@Param('id') id: string) {
+    await this.baileysService.disconnectWhatsApp(id);
+    return { message: 'Desconectado correctamente', accountId: id };
   }
 
   @Get(':id')
@@ -55,7 +68,8 @@ export class WhatsappController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  async remove(@Param('id') id: string) {
+    await this.baileysService.disconnectWhatsApp(id);
     return this.waService.remove(id);
   }
 }
