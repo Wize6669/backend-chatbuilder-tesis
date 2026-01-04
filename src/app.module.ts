@@ -9,6 +9,8 @@ import { BotConfigModule } from './modules/bot-config/bot-config.module';
 import { AiModule } from './modules/ai/ai.module';
 import { RagService } from './modules/ai/rag/rag.service';
 import { MessageProcessorModule } from './modules/whatsapp/message-processor/message-processor.module';
+import { AuthService } from './modules/auth/auth.service';
+import { AuthModule } from './modules/auth/auth.module';
 import databaseConfig from './config/database.config';
 
 @Module({
@@ -25,8 +27,9 @@ import databaseConfig from './config/database.config';
     BotConfigModule,
     AiModule,
     MessageProcessorModule,
+    AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, AuthService],
 })
 export class AppModule {}
