@@ -2,20 +2,18 @@ import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { BotConfigService } from '../bot-config/bot-config.service';
 import { OpenAiService } from './llm/open-ai.service';
 import { RagService } from './rag/rag.service';
-import { HttpService } from '@nestjs/axios';
 import { DateTime } from 'luxon';
 import { MemoryService } from './memory/memory.service';
 import { OpenAiMessage } from './types/chat-message.type';
 
 @Injectable()
-export class AiService {
+export class AiService implements OnModuleInit, OnModuleDestroy {
   private cleanupInterval: NodeJS.Timeout;
 
   constructor(
     private readonly botConfigService: BotConfigService,
     private readonly ragService: RagService,
     private readonly openAiService: OpenAiService,
-    private readonly httpService: HttpService,
     private readonly memoryService: MemoryService,
   ) {}
 
@@ -43,40 +41,62 @@ export class AiService {
   }): Promise<string> {
     const botConfig =
       await this.botConfigService.findByWhatsappAccountId(accountId);
-
     const now = DateTime.now().setZone('America/Guayaquil');
-
     const history = this.memoryService.getHistory(accountId, waId);
+
+    let ragContext = '';
+
+    if (botConfig.useRag && userText.length > 10) {
+      const useRag = await this.openAiService.shouldUseRagLLM(userText);
+      console.log(useRag);
+      if (useRag) {
+        ragContext = await this.ragService.getContext({
+          botConfigId: botConfig.id,
+          query: userText,
+          limit: 5,
+        });
+
+        console.log(`RAG context retrieved (${ragContext} )`);
+      }
+    }
 
     const messages: OpenAiMessage[] = [
       {
         role: 'system',
-        content: `${botConfig.systemPrompt}\n\nFecha actual (ISO): ${now.toISO()}`,
-      },
-      ...history.map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-      })),
-      {
-        role: 'user',
-        content: userText,
+        content: `${botConfig.systemPrompt}
+Fecha actual (ISO): ${now.toISO()}
+
+Reglas:
+- Usa el contexto SOLO si es relevante.
+- Si el contexto no contiene la respuesta, dilo explícitamente.
+- Solo ejecuta acciones externas si el usuario lo pide claramente.`,
       },
     ];
 
-    let response: string;
-
-    if (botConfig.useMcp && botConfig.mcpServerUrl) {
-      response = await this.openAiService.generateWithMcp({
-        model: botConfig.model,
-        messages,
-        mcpServerUrl: botConfig.mcpServerUrl,
-      });
-    } else {
-      response = await this.openAiService.generate({
-        model: botConfig.model,
-        messages,
+    if (ragContext) {
+      messages.push({
+        role: 'system',
+        content: `Contexto de la base de conocimiento:
+${ragContext}`,
       });
     }
+
+    messages.push(
+      ...history.map((m) => ({ role: m.role, content: m.content })),
+      { role: 'user', content: userText },
+    );
+
+    const response =
+      botConfig.useMcp && botConfig.mcpServerUrl
+        ? await this.openAiService.generateWithMcp({
+            model: botConfig.model,
+            messages,
+            mcpServerUrl: botConfig.mcpServerUrl,
+          })
+        : await this.openAiService.generate({
+            model: botConfig.model,
+            messages,
+          });
 
     this.memoryService.addMessage(accountId, waId, 'user', userText);
     this.memoryService.addMessage(accountId, waId, 'assistant', response);

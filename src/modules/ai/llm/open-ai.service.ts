@@ -51,6 +51,7 @@ export class OpenAiService {
       ],
     });
 
+    console.log(response.output_text);
     return response.output_text ?? '';
   }
 
@@ -62,5 +63,38 @@ export class OpenAiService {
     });
 
     return response.data[0].embedding;
+  }
+
+  async shouldUseRagLLM(text: string): Promise<boolean> {
+    const res = await this.client.responses.create({
+      model: 'gpt-4o-mini',
+      input: [
+        {
+          role: 'system',
+          content: `
+Responde SOLO "YES" o "NO".
+
+Responde YES si la pregunta requiere
+información factual del negocio,
+documentos, precios, horarios, servicios, promociones,
+políticas, o datos almacenados.
+
+Responde NO si es:
+- saludo
+- agradecimiento
+- small talk
+- confirmación corta
+- acciones ("guarda", "agenda")
+        `.trim(),
+        },
+        {
+          role: 'user',
+          content: text,
+        },
+      ],
+    });
+
+    const out = res.output_text?.trim().toUpperCase();
+    return out === 'YES';
   }
 }

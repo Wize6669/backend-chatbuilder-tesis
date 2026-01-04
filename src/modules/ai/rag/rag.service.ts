@@ -5,21 +5,30 @@ import { QdrantService } from './qdrant.service';
 @Injectable()
 export class RagService {
   constructor(
-    private readonly openAi: OpenAiService,
-    private readonly qdrant: QdrantService,
+    private readonly openAiService: OpenAiService,
+    private readonly qdrantService: QdrantService,
   ) {}
 
-  async retrieveContext(query: string, botConfigId: string): Promise<string> {
-    const queryEmbedding = await this.openAi.embed(query);
+  async getContext({
+    botConfigId,
+    query,
+    limit = 5,
+  }: {
+    botConfigId: string;
+    query: string;
+    limit?: number;
+  }): Promise<string> {
+    const embedding = await this.openAiService.embed(query);
 
-    const results = await this.qdrant.search({
+    const results = await this.qdrantService.search({
       collection: `bot_${botConfigId}`,
-      vector: queryEmbedding,
-      limit: 5,
+      vector: embedding,
+      limit,
     });
 
     return results
-      .map((r) => `Fuente: ${r?.payload?.source}\n${r?.payload?.text}`)
-      .join('\n\n');
+      .map((r) => r.payload?.text)
+      .filter(Boolean)
+      .join('\n\n---\n\n');
   }
 }
