@@ -3,13 +3,17 @@ import * as baileys from 'baileys';
 import QRCode from 'qrcode';
 import { WhatsappService } from '../whatsapp.service';
 import { useDbAuthState } from './db-auth-state';
+import { MessageProcessorService } from '../message-processor/message-processor.service';
 
 @Injectable()
 export class BaileysService implements OnModuleInit {
   private connections: Map<string, any> = new Map();
   private qrCodes: Map<string, Buffer> = new Map();
 
-  constructor(private readonly whatsappService: WhatsappService) {}
+  constructor(
+    private readonly whatsappService: WhatsappService,
+    private readonly messageProcessorService: MessageProcessorService,
+  ) {}
 
   async onModuleInit() {
     const accounts = await this.whatsappService.findAll();
@@ -98,38 +102,49 @@ export class BaileysService implements OnModuleInit {
           }
 
           const from = message.key.remoteJid;
-          const isGroup = from?.endsWith('@g.us');
-          const sender = message.key.participant || from;
-          const isFromMe = message.key.fromMe;
+          const messageContent = message.message;
 
-          const messageText =
-            message.message?.conversation ||
-            message.message?.extendedTextMessage?.text ||
-            message.message?.imageMessage?.caption ||
-            message.message?.videoMessage?.caption ||
-            '';
+          if (!messageContent) continue;
 
-          const messageType = Object.keys(message.message || {})[0];
+          try {
+            const response = await this.messageProcessorService.process(
+              accountId,
+              message,
+              from!,
+              sock,
+            );
 
-          console.log(`📨 Tipo de evento: ${type}`);
+            if (!response) {
+              console.log(`⚠️ No se generó respuesta para ${from}`);
+              continue;
+            }
 
-          console.log(`
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📱 MENSAJE RECIBIDO [${accountId}]
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-👤 De: ${sender}
-📍 Chat: ${from}
-👥 Es grupo: ${isGroup}
-📤 Mensaje propio: ${isFromMe}
-📝 Tipo: ${messageType}
-💬 Contenido: ${messageText || '[Multimedia/Sin texto]'}
-🆔 Message ID: ${message.key.id}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          `);
+            await new Promise((resolve) => setTimeout(resolve, 3000));
 
-          // SOLO REGISTRAR - NO RESPONDER
-          // Aquí puedes guardar el mensaje en DB si lo necesitas
-          // await this.saveMessageToDatabase(accountId, message, messageText);
+            if (response.type === 'audio') {
+              await sock.sendMessage(from!, {
+                audio: response.content as Buffer,
+                mimetype: 'audio/mpeg',
+                ptt: false,
+              });
+              console.log(`🔊 Audio enviado a ${from}`);
+            } else {
+              await sock.sendMessage(from!, {
+                text: response.content as string,
+              });
+              console.log(`💬 Texto enviado a ${from}`);
+            }
+          } catch (error) {
+            console.error(`❌ Error procesando mensaje de ${from}:`, error);
+
+            try {
+              await sock.sendMessage(from!, {
+                text: 'Lo siento, hubo un error procesando tu mensaje.',
+              });
+            } catch (sendError) {
+              console.error(`❌ Error enviando mensaje de error:`, sendError);
+            }
+          }
         }
       });
     } catch (error) {
