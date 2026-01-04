@@ -15,10 +15,10 @@ export class BotConfig {
   @Column({ default: 'gpt-4o-mini' })
   model: string;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'text', nullable: false })
   systemPrompt: string;
 
-  @Column({ default: true })
+  @Column({ default: false })
   useRag: boolean;
 
   @Column({ default: false })

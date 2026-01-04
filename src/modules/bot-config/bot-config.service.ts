@@ -47,6 +47,25 @@ export class BotConfigService {
     return config;
   }
 
+  async findByWhatsappAccountId(whatsappAccountId: string): Promise<BotConfig> {
+    const config = await this.configRepo.findOne({
+      where: {
+        whatsappAccount: {
+          id: whatsappAccountId,
+        },
+      },
+      relations: ['whatsappAccount'],
+    });
+
+    if (!config) {
+      throw new NotFoundException(
+        'BotConfig not found for this WhatsApp account',
+      );
+    }
+
+    return config;
+  }
+
   async update(id: string, dto: UpdateBotConfigDto) {
     const config = await this.findOne(id);
     Object.assign(config, dto);

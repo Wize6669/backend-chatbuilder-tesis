@@ -26,6 +26,9 @@ export class WhatsappAccount {
   @MaxLength(18)
   phoneNumber: string;
 
+  @Column({ type: 'varchar', unique: true })
+  jid: string;
+
   @Column({ default: false })
   isConnected: boolean;
 

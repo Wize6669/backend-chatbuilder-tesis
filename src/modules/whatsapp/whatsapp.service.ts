@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 import { User } from '../users/user.entity';
 import { CreateWhatsappAccountDto } from './dto/create-whatsapp-account.dto';
 import { UpdateWhatsappAccountDto } from './dto/update-whatsapp-account.dto';
+import { jidFromPhone } from './utils/utils';
 
 @Injectable()
 export class WhatsappService {
@@ -37,9 +38,12 @@ export class WhatsappService {
       throw new ConflictException('WhatsApp number already registered');
     }
 
+    const jid = jidFromPhone(dto.phoneNumber);
+
     const wa = this.waRepo.create({
       name: dto.name,
       phoneNumber: dto.phoneNumber,
+      jid,
       user,
     });
 
