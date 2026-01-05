@@ -7,11 +7,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
 import { BotConfigModule } from './modules/bot-config/bot-config.module';
 import { AiModule } from './modules/ai/ai.module';
-import { RagService } from './modules/ai/rag/rag.service';
 import { MessageProcessorModule } from './modules/whatsapp/message-processor/message-processor.module';
-import { AuthService } from './modules/auth/auth.service';
-import { AuthModule } from './modules/auth/auth.module';
 import databaseConfig from './config/database.config';
+import { AuthModule } from './modules/auth/auth.module';
+import { APP_GUARD } from '@nestjs/core';
+import { AuthGuard } from './common/guards/auth.guard';
 
 @Module({
   imports: [
@@ -30,6 +30,12 @@ import databaseConfig from './config/database.config';
     AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService, AuthService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
+    },
+  ],
 })
 export class AppModule {}
