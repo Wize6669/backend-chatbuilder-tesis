@@ -21,6 +21,13 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
+  @Post('logout')
+  logout() {
+    return {
+      message: 'Logout successful',
+    };
+  }
+
   @Public()
   @Post('forgot-password')
   async forgotPassword(@Body() dto: ForgotPasswordDto) {

@@ -48,8 +48,6 @@ export class AuthService {
       where: { email: dto.email },
     });
 
-    console.log('user found:', user);
-
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
