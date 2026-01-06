@@ -62,6 +62,11 @@ export class WhatsappController {
     return this.waService.findOne(id);
   }
 
+  @Get('user/:userId')
+  findByUser(@Param('userId') userId: string) {
+    return this.waService.findByUserId(userId);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateWhatsappAccountDto) {
     return this.waService.update(id, dto);

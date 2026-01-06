@@ -69,6 +69,23 @@ export class WhatsappService {
     return wa;
   }
 
+  async findByUserId(userId: string) {
+    const accounts = await this.waRepo.find({
+      where: {
+        user: {
+          id: userId,
+        },
+      },
+      relations: ['user'],
+    });
+
+    if (!accounts.length) {
+      throw new NotFoundException('No WhatsApp accounts found for this user');
+    }
+
+    return accounts;
+  }
+
   async update(id: string, dto: UpdateWhatsappAccountDto) {
     const wa = await this.findOne(id);
 
