@@ -30,6 +30,13 @@ export class BotConfigController {
     return this.service.findOne(id);
   }
 
+  @Get('by-account/:whatsappAccountId')
+  findByWhatsappAccountId(
+    @Param('whatsappAccountId') whatsappAccountId: string,
+  ) {
+    return this.service.findByWhatsappAccountId(whatsappAccountId);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateBotConfigDto) {
     return this.service.update(id, dto);
