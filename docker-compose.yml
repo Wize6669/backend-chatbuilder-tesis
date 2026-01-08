@@ -26,6 +26,31 @@ services:
     volumes:
       - qdrant-storage:/qdrant/storage
 
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: backend-app:latest
+    restart: unless-stopped
+    ports:
+      - 3000:3000
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    user: "1000:1000"
+    volumes: []
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 volumes:
   db_postgresql:
   qdrant-storage:
