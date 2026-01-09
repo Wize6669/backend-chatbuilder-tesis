@@ -41,8 +41,9 @@ export class AiService implements OnModuleInit, OnModuleDestroy {
   }): Promise<string> {
     const botConfig =
       await this.botConfigService.findByWhatsappAccountId(accountId);
-    const now = DateTime.now().setZone('America/Guayaquil');
+    const now = DateTime.now().setZone('America/Guayaquil').setLocale('es');
     const history = this.memoryService.getHistory(accountId, waId);
+    const dayName = now.weekdayLong;
 
     let ragContext = '';
 
@@ -64,7 +65,7 @@ export class AiService implements OnModuleInit, OnModuleDestroy {
       {
         role: 'system',
         content: `${botConfig.systemPrompt}
-Fecha actual (ISO): ${now.toISO()}
+Fecha actual (ISO): ${now.toISO()} y día de la semana: ${dayName}
 
 Reglas:
 - Usa el contexto SOLO si es relevante.
