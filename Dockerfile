@@ -25,3 +25,4 @@ COPY --chown=node:node --from=builder /usr/src/app/pnpm-lock.yaml ./
 USER node
 EXPOSE 3000
 CMD ["node", "dist/main.js"]
+
