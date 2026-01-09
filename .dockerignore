@@ -7,6 +7,7 @@ dist
 .gitignore
 Dockerfile
 docker-compose-production.yml
+docker-compose.yml
 npm-debug.log
 pnpm-debug.log
 README.md
